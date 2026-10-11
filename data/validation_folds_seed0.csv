@@ -1,0 +1,29 @@
+id,species,source_pmcid,real_image,colour_training_eligible,random_5fold_seed0
+PMC9832292_fig2b_blue,Phasianus colchicus,PMC9832292,True,True,3
+PMC9832292_fig2b_green,Phasianus colchicus,PMC9832292,True,True,5
+PMC9832292_fig3a_blue_etch60,Phasianus colchicus,PMC9832292,True,True,1
+PMC9832292_fig3a_blue_etch120,Phasianus colchicus,PMC9832292,True,True,2
+PMC8599086_fig1c_bluevane,Cyanistes caeruleus,PMC8599086,True,True,1
+PMC8599086_fig1d_whitedot,Cyanistes caeruleus,PMC8599086,True,True,4
+PMC8505553_fig4_rockdove,Columba livia,PMC8505553,True,True,2
+PMC8505553_fig4_stellersjay,Cyanocitta stelleri,PMC8505553,True,True,4
+PMC8505553_fig5a_parotia,Parotia lawesii,PMC8505553,True,True,3
+PMC8505553_fig5b_teal,Anas crecca,PMC8505553,True,True,5
+PMC8505553_fig5c_starling,Cinnyricinclus leucogaster,PMC8505553,True,True,1
+PMC8505553_fig5d_racket,Ocreatus underwoodii,PMC8505553,True,True,1
+PMC8505553_fig6d_sphere,biomimetic (synthetic melanin nanoparticles),PMC8505553,True,True,3
+PMC8505553_fig6d_roundish,biomimetic (synthetic melanin nanoparticles),PMC8505553,True,True,3
+PMC8505553_fig6d_mixed,biomimetic (synthetic melanin nanoparticles),PMC8505553,True,True,4
+PMC8505553_fig6d_ellipsoid,biomimetic (synthetic melanin nanoparticles),PMC8505553,True,True,5
+PMC8505553_fig6d_elong,biomimetic (synthetic melanin nanoparticles),PMC8505553,True,True,2
+STAVENGA2011_king_fig3F,Alcedo atthis,,True,True,4
+PMC2706469_fig1e_channel,"Aves (Prum 2009, channel-type)",PMC2706469,True,True,3
+PMC2706469_fig1a_channel,"Aves (Prum 2009, channel-type)",PMC2706469,True,True,1
+PMC2706469_fig1c_sphere,"Aves (Prum 2009, sphere-type)",PMC2706469,True,True,3
+PMC4685390_fig6c_jay,Garrulus glandarius,PMC4685390,True,True,2
+PMC4685390_fig6d_jay,Garrulus glandarius,PMC4685390,True,True,4
+PMC4685390_fig6e_jay,Garrulus glandarius,PMC4685390,True,True,2
+PMC3427513_fig2d_broadbill,Serilophus lunatus,PMC3427513,True,True,5
+PMC3427513_fig2e_bluebird,Sialia sialis,PMC3427513,True,True,5
+PMC3427513_fig2f_cotinga,Cotinga maynana,PMC3427513,True,True,2
+PMC2706469_fig2f_sphere,"Aves (Prum 2009, sphere-type)",PMC2706469,True,True,1

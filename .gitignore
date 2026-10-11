@@ -1,0 +1,26 @@
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.ipynb_checkpoints/
+.env
+.env.*
+*.pem
+*.key
+*secret*
+*credential*
+
+# Source images are intentionally excluded from the public repository.
+data/images/
+data/real_images/
+data/raw_figures/
+crawler/.cache/
+
+# Locally generated model and simulation artefacts.
+model/checkpoint.pt
+model/*.pth
+model/*.pt
+experiments/fdtd*_spectrum.csv

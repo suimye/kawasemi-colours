@@ -1,0 +1,11 @@
+name: kawasemi-meep
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pymeep=1.34.0
+  - numpy
+  - scipy
+  - pip
+  - pip:
+      - opencv-python-headless>=4.8

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kawasemi Colors — Structural Color Simulator</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#171b22; --panel2:#1f2530; --line:#2a3140;
+    --text:#e6ebf2; --muted:#95a1b3; --accent:#37b6ff; --good:#3ddc97; --warn:#ffb454;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,"Segoe UI",Roboto,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  header{padding:20px 24px 8px;}
+  .headerMain{flex:1;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .tagline{color:var(--muted); font-size:13px; max-width:900px; margin:6px 0 0;}
+  .badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; margin-left:8px; vertical-align:middle;}
+  .badge.fallback{background:#33240f; color:var(--warn); border:1px solid #5a3f14;}
+  .badge.trained{background:#0f2e22; color:var(--good); border:1px solid #1a5a41;}
+  footer{padding:8px 24px 28px; display:flex; justify-content:center;}
+  .langSwitch{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--muted);}
+  .langSwitch button{background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px; padding:2px 3px;}
+  .langSwitch button.active{color:var(--accent); font-weight:600;}
+  .langSwitch button:hover{color:var(--text);}
+  .wrap{display:grid; grid-template-columns:340px 1fr; gap:16px; padding:12px 24px 40px; align-items:start;}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr;}}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px;}
+  .panel h2{font-size:14px; margin:0 0 12px; letter-spacing:.02em; color:var(--text);}
+  label{font-size:12px; color:var(--muted); display:block; margin:10px 0 4px;}
+  input[type=range]{width:100%;}
+  input[type=color]{width:100%; height:44px; border:none; background:none; cursor:pointer; border-radius:8px;}
+  .row{display:flex; gap:8px; align-items:center;}
+  .row .val{font-variant-numeric:tabular-nums; font-size:12px; color:var(--text); min-width:54px; text-align:right;}
+  .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .sw{width:100%; text-align:left; border:1px solid var(--line); background:var(--panel2); color:var(--text);
+      border-radius:8px; padding:7px 9px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:12px;}
+  .sw:hover{border-color:var(--accent);}
+  .sw .dot{width:18px; height:18px; border-radius:4px; flex:0 0 auto; border:1px solid rgba(255,255,255,.2);}
+  .params{display:grid; grid-template-columns:1fr; gap:0;}
+  .prow{display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line);}
+  .prow:last-child{border-bottom:none;}
+  .prow .k{font-size:12px; color:var(--muted);}
+  .prow .v{font-variant-numeric:tabular-nums; font-size:16px; font-weight:600; text-align:right;}
+  .prow .v small{font-weight:400; color:var(--muted); font-size:11px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+  canvas{width:100%; display:block; border-radius:8px; background:#0a0d12;}
+  .caption{font-size:11px; color:var(--muted); margin-top:6px;}
+  .patches{display:flex; gap:12px; margin-top:12px;}
+  .patch{flex:1; text-align:center;}
+  .patch .box{height:70px; border-radius:8px; border:1px solid var(--line);}
+  .patch .lbl{font-size:11px; color:var(--muted); margin-top:5px;}
+  .note{font-size:11px; color:var(--muted); background:var(--panel2); border:1px solid var(--line);
+        border-radius:8px; padding:10px 12px; margin-top:12px;}
+  .note b{color:var(--text);}
+  details{margin-top:12px; font-size:12px; color:var(--muted);}
+  summary{cursor:pointer; color:var(--accent);}
+  details p{margin:8px 0;}
+  code{background:#0a0d12; padding:1px 5px; border-radius:4px; font-size:11px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="headerMain">
+    <h1 id="h1Title"></h1>
+    <p class="tagline" id="tagline"></p>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT: input -->
+  <div class="panel">
+    <h2 id="hTarget"></h2>
+    <input type="color" id="picker" value="#1f6fb0">
+    <div id="sliders"></div>
+
+    <h2 id="hPresets" style="margin-top:18px"></h2>
+    <div class="swatches" id="swatches"></div>
+  </div>
+
+  <!-- RIGHT: outputs -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+    <div class="panel">
+      <h2 id="hRequired"></h2>
+      <div class="params" id="params"></div>
+      <div class="note" id="honest"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2 id="hStructure"></h2>
+        <canvas id="structCanvas" width="520" height="360"></canvas>
+        <div class="caption" id="capStructure"></div>
+      </div>
+      <div class="panel">
+        <h2 id="hSpectrum"></h2>
+        <canvas id="specCanvas" width="520" height="300"></canvas>
+        <div class="caption" id="capSpectrum"></div>
+        <div class="patches">
+          <div class="patch"><div class="box" id="targetPatch"></div><div class="lbl" id="lblTarget"></div></div>
+          <div class="patch"><div class="box" id="reproPatch"></div><div class="lbl" id="lblRepro"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <details open>
+        <summary id="howSummary"></summary>
+        <div id="howBody"></div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="langSwitch" id="langSwitch">
+    <button id="langEn" data-lang="en">EN</button><span>/</span><button id="langJa" data-lang="ja">JPN</button>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ============================================================
+   I18N — default English, toggle to Japanese. All UI text lives here.
+   ============================================================ */
+var I18N = {
+  en: {
+    pageTitle: "Kawasemi Colors — Structural Color Simulator",
+    h1: "Kawasemi Structural-Color Simulator",
+    badgeFallback: "physics fallback",
+    badgeTrained: "using trained model",
+    taglineHTML: "Structural color (kingfisher blue, pigeon iridescence) arises from " +
+      "<b>nanostructure, not pigment</b>. This app solves the inverse problem — pick a " +
+      "<b>target color</b> and it estimates the <b>nanostructure that would reproduce it, pigment-free</b>, " +
+      "and visualizes the structure and reflectance spectrum. First-order coherent-scattering approximation.",
+    hTarget: "1. Target color",
+    hPresets: "Presets",
+    hRequired: "2. Required nanostructure",
+    hStructure: "3. Pore network",
+    hSpectrum: "4. Predicted reflectance",
+    capStructure: "Quasi-random keratin/air network: spacing = d, hole size = pore diameter, regularity = structural order.",
+    capSpectrum: "380–740 nm. Peak wavelength = target's dominant wavelength; width = order (narrower = higher order = higher saturation).",
+    lblTarget: "Target",
+    lblRepro: "Reproduced (structure→color)",
+    howSummary: "How to read this",
+    howBody:
+      "<p><b>d (characteristic spacing)</b>: centre-to-centre distance of the keratin network, obtained by inverting " +
+      "<code>λ_peak ≈ 2·n_eff·d</code>. Smaller for blue, larger for red.</p>" +
+      "<p><b>n_eff (effective refractive index)</b>: volume-weighted average of air (1.0) and keratin (1.56), " +
+      "<code>n_eff = f·1.0 + (1−f)·1.56</code>, where f is the pore fraction.</p>" +
+      "<p><b>Pore fraction f / pore diameter</b>: derived from the target's brightness (fill fraction) and " +
+      "saturation (order).</p>" +
+      "<p><b>Structural order (→ saturation)</b>: smaller period variability (domain_std) means higher order, " +
+      "a sharper reflectance peak, and higher saturation.</p>" +
+      "<p style='color:#6f7c90'>This is a first-order coherent-scattering approximation — a didactic inverse model, " +
+      "not a rigorous electromagnetic solver. It is meant to build intuition about pigment-free structural color.</p>",
+    sliderR: "R", sliderG: "G", sliderB: "B",
+    sliderH: "Hue (H)", sliderS: "Saturation (S)", sliderV: "Value (V)",
+    rowD: "Characteristic spacing (d)",
+    rowNeff: "Effective refractive index (n_eff)",
+    rowPore: "Pore / air volume fraction (f)",
+    rowPoreDiam: "Approx. pore diameter",
+    rowWall: "Keratin wall thickness",
+    rowOrder: "Structural order → saturation",
+    rowDomainStd: "Period variability (domain_std)",
+    rowLambda: "Dominant wavelength (λ)",
+    honestPrefix: "Reading: ",
+    honestBody: "d is derived by inverting λ_peak ≈ 2·n_eff·d. This colour is reproduced with zero pigment — nanostructure only.",
+    honestSanity: "First-order coherent-scattering approximation — sanity check: ",
+    presetName: 1, // index into preset tuple [ja, en, hex] used as display name
+  },
+  ja: {
+    pageTitle: "Kawasemi Colors — 構造色シミュレーター",
+    h1: "カワセミ・カラー 構造色シミュレーター",
+    badgeFallback: "物理近似モデル",
+    badgeTrained: "学習済みモデル使用",
+    taglineHTML: "構造色（カワセミの青、ハトの虹色）は<b>色素ではなくナノ構造</b>から生まれます。" +
+      "このアプリは逆問題を解きます — <b>目標の色</b>を選ぶと、<b>色素なしでその色を再現するナノ構造</b>の" +
+      "パラメータを推定し、構造と反射スペクトルを可視化します。一次コヒーレント散乱近似。",
+    hTarget: "1. 目標の色",
+    hPresets: "プリセット",
+    hRequired: "2. 推定ナノ構造パラメータ",
+    hStructure: "3. 構造の可視化",
+    hSpectrum: "4. 予測反射スペクトル",
+    capStructure: "スポンジ状ケラチン網目の擬似再現。間隔 d = 周期、穴サイズ = 空孔径、規則性 = 構造秩序（→彩度）。",
+    capSpectrum: "380–740 nm。ピーク波長 = 目標色の主波長、幅 = 秩序（狭い = 高秩序 = 高彩度）。",
+    lblTarget: "目標色",
+    lblRepro: "構造由来色",
+    howSummary: "読み方・原理",
+    howBody:
+      "<p><b>d（特性間隔）</b>: ケラチンの網目の中心間距離。関係式 <code>λ_peak ≈ 2·n_eff·d</code> を逆算して求めます。" +
+      "青ほど小さく、赤ほど大きくなります。</p>" +
+      "<p><b>n_eff（実効屈折率）</b>: 空気(1.0)とケラチン(1.56)の体積加重平均 " +
+      "<code>n_eff = f·1.0 + (1−f)·1.56</code>。f は空孔率。</p>" +
+      "<p><b>空孔率 f / 空孔径</b>: 目標の明度から充填率を、彩度から秩序度を対応づけています。</p>" +
+      "<p><b>構造秩序（→彩度）</b>: 周期のばらつき domain_std が小さいほど秩序が高く、反射ピークが鋭く彩度が高くなります。</p>" +
+      "<p style='color:#6f7c90'>これは一次コヒーレント散乱近似であり、厳密な電磁波ソルバーではありません。" +
+      "色素なし構造色の直感を養うための教育的な逆問題モデルです。</p>",
+    sliderR: "R", sliderG: "G", sliderB: "B",
+    sliderH: "色相 H", sliderS: "彩度 S", sliderV: "明度 V",
+    rowD: "特性間隔 (d)",
+    rowNeff: "実効屈折率 (n_eff)",
+    rowPore: "空孔率 (f)",
+    rowPoreDiam: "空孔径",
+    rowWall: "壁厚",
+    rowOrder: "構造秩序（→彩度）",
+    rowDomainStd: "周期ばらつき (domain_std)",
+    rowLambda: "主波長 (λ)",
+    honestPrefix: "解釈: ",
+    honestBody: "λ_peak ≈ 2·n_eff·d の逆算で d を導出。この色は色素ゼロ、ナノ構造のみで再現できます。",
+    honestSanity: "一次コヒーレント散乱近似 — 確認: ",
+    presetName: 0,
+  }
+};
+var LANG = localStorage.getItem("kawasemi_lang") || "en";
+
+/* ============================================================
+   MODEL: physics fallback + optional trained model override
+   Shared relation (DATA_CONTRACT.md):
+     peak_wavelength ≈ 2 * n_eff * d
+     n_eff = pore_fraction*1.0 + (1-pore_fraction)*1.56
+     saturation grows with order (smaller domain_std)
+   ============================================================ */
+var N_KERATIN = 1.56, N_AIR = 1.0;
+var MODEL = null;              // trained model params if loaded
+var USING_TRAINED = false;
+
+// Try to load a learned model; fail gracefully.
+function loadModel(){
+  // Try both a sibling model dir and same-dir copy.
+  var tries = ["../model/model_params.json", "./model_params.json"];
+  var i = 0;
+  function attempt(){
+    if(i >= tries.length){ return; } // keep fallback
+    fetch(tries[i], {cache:"no-store"}).then(function(r){
+      if(!r.ok) throw new Error("no");
+      return r.json();
+    }).then(function(j){
+      MODEL = j; USING_TRAINED = true;
+      applyLang();
+      recompute();
+    }).catch(function(){ i++; attempt(); });
+  }
+  attempt();
+}
+
+/* ---------- Color conversions ---------- */
+function hexToRgb(hex){
+  hex = hex.replace('#','');
+  return [parseInt(hex.substr(0,2),16), parseInt(hex.substr(2,2),16), parseInt(hex.substr(4,2),16)];
+}
+function rgbToHex(r,g,b){
+  function h(x){x=Math.max(0,Math.min(255,Math.round(x))).toString(16); return x.length<2?'0'+x:x;}
+  return '#'+h(r)+h(g)+h(b);
+}
+function rgbToHsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  var mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  var h=0;
+  if(d!==0){
+    if(mx===r) h=((g-b)/d)%6;
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  var s = mx===0?0:d/mx;
+  return [h, s, mx]; // h 0..360, s 0..1, v 0..1
+}
+function hsvToRgb(h,s,v){
+  var c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c, r=0,g=0,b=0;
+  if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  return [(r+m)*255,(g+m)*255,(b+m)*255];
+}
+
+/* ---------- Hue -> dominant wavelength ---------- */
+// Map hue to an approximate dominant wavelength across the visible band.
+// Spectral hues run ~ violet(400) .. red(700). Magentas (300-360) have no single
+// spectral wavelength; we map them onto the deep-blue/violet end for structural intent.
+function hueToWavelength(h){
+  // Anchor points (hue -> nm), monotonic segments for the spectral part.
+  // red 0deg ~700, yellow 60 ~575, green 120 ~530, cyan 180 ~490, blue 240 ~460, violet ~430
+  var anchors = [
+    [0,   700],[30, 605],[60, 575],[120, 530],[180, 490],
+    [210, 475],[240, 460],[270, 445],[300, 430],[360, 700]
+  ];
+  for(var i=0;i<anchors.length-1;i++){
+    var a=anchors[i], b=anchors[i+1];
+    if(h>=a[0] && h<=b[0]){
+      var t=(h-a[0])/(b[0]-a[0]);
+      return a[1]+t*(b[1]-a[1]);
+    }
+  }
+  return 550;
+}
+
+/* ---------- INVERSE MODEL ----------
+   Given target color -> nanostructure parameters. */
+function invert(rgb){
+  var hsv = rgbToHsv(rgb[0],rgb[1],rgb[2]);
+  var hue=hsv[0], sat=hsv[1], val=hsv[2];
+  var lambda = hueToWavelength(hue);
+
+  // brightness -> pore/air fill fraction.
+  // Brighter structural color implies a bit more air (lower n_eff) & stronger scattering.
+  // Real spongy keratin sits ~0.30-0.50 air fraction, so keep n_eff high enough that
+  // a saturated blue (~470nm) lands near the textbook d ~150nm (470/(2*1.56)).
+  // Map value 0..1 -> pore_fraction 0.22..0.42 (typical spongy keratin range).
+  var pore = 0.22 + 0.20*val;
+
+  var params;
+  if(USING_TRAINED && MODEL){
+    params = invertTrained(lambda, sat, val, hue);
+  } else {
+    var n_eff = pore*N_AIR + (1-pore)*N_KERATIN;
+    // peak = 2 * n_eff * d  ->  d = peak / (2 n_eff)
+    var d = lambda / (2*n_eff);          // nm
+    // structural order from saturation: high sat -> low disorder (small domain_std)
+    // domain_std as fraction of d: 0.05 (very ordered) .. 0.45 (disordered)
+    var disorderFrac = 0.45 - 0.40*sat;
+    var domain_std = disorderFrac * d;
+    // pore diameter: fraction of spacing scaled by air content
+    var pore_diam = d * (0.35 + 0.45*pore);
+    var wall = Math.max(4, d - pore_diam);
+    params = {lambda:lambda, d:d, n_eff:n_eff, pore:pore, pore_diam:pore_diam,
+              wall:wall, domain_std:domain_std, order:sat, disorderFrac:disorderFrac};
+  }
+  params.hue=hue; params.sat=sat; params.val=val;
+  return params;
+}
+
+// If a trained model is present, use its lookup/coefficients. We support a couple
+// of simple, documented shapes so the model agent can drop in results without
+// breaking the UI:
+//   { "type":"linear", "d": {"a":..,"b":..}, ... }  -> d = a*lambda + b
+//   { "type":"lookup", "table":[{peak_nm, d_nm, n_eff, pore_fraction, pore_diameter_nm, domain_std_nm}, ...] }
+function invertTrained(lambda, sat, val, hue){
+  var m = MODEL;
+  var d, n_eff, pore, pore_diam, domain_std;
+  if(m.type === "linear" && m.d){
+    d = m.d.a*lambda + m.d.b;
+    pore = m.pore ? (m.pore.a*val + m.pore.b) : (0.35+0.37*val);
+    n_eff = pore*N_AIR + (1-pore)*N_KERATIN;
+    pore_diam = m.pore_diam ? (m.pore_diam.a*d + m.pore_diam.b) : d*(0.35+0.45*pore);
+    domain_std = m.domain_std ? (m.domain_std.a*(1-sat)+m.domain_std.b)*d : (0.45-0.40*sat)*d;
+  } else if(m.type === "lookup" && m.table){
+    // nearest-peak lookup + light interpolation
+    var t=m.table.slice().sort(function(a,b){return a.peak_nm-b.peak_nm;});
+    var lo=t[0], hi=t[t.length-1], k;
+    for(k=0;k<t.length-1;k++){ if(lambda>=t[k].peak_nm && lambda<=t[k+1].peak_nm){lo=t[k];hi=t[k+1];break;} }
+    var f=(hi.peak_nm===lo.peak_nm)?0:(lambda-lo.peak_nm)/(hi.peak_nm-lo.peak_nm);
+    function lerp(a,b){return a+f*(b-a);}
+    d = lerp(lo.d_nm, hi.d_nm);
+    pore = lo.pore_fraction!=null ? lerp(lo.pore_fraction, hi.pore_fraction) : (0.35+0.37*val);
+    n_eff = lo.n_eff!=null ? lerp(lo.n_eff, hi.n_eff) : (pore*N_AIR+(1-pore)*N_KERATIN);
+    pore_diam = lo.pore_diameter_nm!=null ? lerp(lo.pore_diameter_nm, hi.pore_diameter_nm) : d*(0.35+0.45*pore);
+    domain_std = lo.domain_std_nm!=null ? lerp(lo.domain_std_nm, hi.domain_std_nm) : (0.45-0.40*sat)*d;
+  } else {
+    // unknown shape -> fall back
+    pore = 0.35+0.37*val; n_eff=pore*N_AIR+(1-pore)*N_KERATIN;
+    d = lambda/(2*n_eff); pore_diam=d*(0.35+0.45*pore); domain_std=(0.45-0.40*sat)*d;
+  }
+  var wall = Math.max(4, d - pore_diam);
+  return {lambda:lambda, d:d, n_eff:n_eff, pore:pore, pore_diam:pore_diam, wall:wall,
+          domain_std:domain_std, order:sat, disorderFrac:domain_std/d};
+}
+
+/* ---------- Reflectance spectrum ----------
+   Gaussian peak centered at lambda; width from structural order. */
+function reflectance(nm, p){
+  // width: higher order (smaller disorderFrac) -> narrower FWHM
+  var fwhm = 30 + 220*p.disorderFrac;      // nm
+  var sigma = fwhm/2.3548;
+  var amp = 0.25 + 0.70*p.sat*p.val;       // peak height from sat & brightness
+  var g = amp*Math.exp(-0.5*Math.pow((nm-p.lambda)/sigma,2));
+  var floor = 0.05 + 0.10*p.val;           // diffuse baseline
+  return Math.min(1, g+floor);
+}
+
+/* ---------- Spectrum -> displayed color (round trip) ----------
+   Integrate reflectance against crude CIE-ish RGB response to show what the
+   structure would actually look like. */
+function spectrumToRgb(p){
+  // Simple response curves peaking ~600(R),550(G),455(B).
+  var R=0,G=0,B=0,W=0;
+  for(var nm=380; nm<=740; nm+=5){
+    var refl = reflectance(nm, p);
+    var r=Math.exp(-0.5*Math.pow((nm-600)/40,2)) + 0.35*Math.exp(-0.5*Math.pow((nm-440)/25,2));
+    var g=Math.exp(-0.5*Math.pow((nm-550)/45,2));
+    var b=Math.exp(-0.5*Math.pow((nm-455)/40,2));
+    R+=refl*r; G+=refl*g; B+=refl*b; W+=1;
+  }
+  // normalize to brightest channel
+  var mx=Math.max(R,G,B)||1;
+  R/=mx; G/=mx; B/=mx;
+  // apply overall brightness
+  var scale = 60 + 195*p.val;
+  return [R*scale, G*scale, B*scale];
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+function fmt(x,d){ d=d==null?0:d; return Number(x).toFixed(d); }
+function t(){ return I18N[LANG]; }
+
+var params = document.getElementById("params");
+function renderParams(p){
+  var L = t();
+  var rows = [
+    [L.rowD, fmt(p.d,0), "nm"],
+    [L.rowNeff, fmt(p.n_eff,3), ""],
+    [L.rowPore, fmt(p.pore*100,0), "%"],
+    [L.rowPoreDiam, fmt(p.pore_diam,0), "nm"],
+    [L.rowWall, fmt(p.wall,0), "nm"],
+    [L.rowOrder, fmt(p.order*100,0), "%"],
+    [L.rowDomainStd, fmt(p.domain_std,0), "nm"],
+    [L.rowLambda, fmt(p.lambda,0), "nm"],
+  ];
+  var html="";
+  rows.forEach(function(r){
+    html += '<div class="prow"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+
+            (r[2]?' <small>'+r[2]+'</small>':'')+'</div></div>';
+  });
+  params.innerHTML = html;
+}
+
+/* ---- Structure canvas: quasi-random pore network ---- */
+var sc = document.getElementById("structCanvas");
+var sctx = sc.getContext("2d");
+function drawStructure(p){
+  var W=sc.width, H=sc.height;
+  sctx.clearRect(0,0,W,H);
+  // keratin background
+  sctx.fillStyle="#2b2f38";
+  sctx.fillRect(0,0,W,H);
+
+  // Map spacing d (nm) to pixels. Choose so blue(~150nm)->~26px, red larger.
+  var pxPerNm = 26/150;
+  var step = Math.max(14, p.d*pxPerNm);
+  var jitter = step * p.disorderFrac;        // disorder = positional jitter
+  var poreR = Math.max(3, (p.pore_diam*pxPerNm)/2);
+
+  // reproduced color for the pore fill tint
+  var rc = spectrumToRgb(p);
+  var poreColor = "rgb("+Math.round(rc[0])+","+Math.round(rc[1])+","+Math.round(rc[2])+")";
+  var airColor = "#0a0d12";
+
+  // deterministic pseudo-random so it's stable per frame
+  var seed = Math.floor(p.d*1000+p.sat*777+p.val*333);
+  function rnd(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }
+
+  var pts=[];
+  for(var y=-step; y<H+step; y+=step){
+    for(var x=-step; x<W+step; x+=step){
+      var jx = x + (rnd()-0.5)*2*jitter;
+      var jy = y + (rnd()-0.5)*2*jitter;
+      var rr = poreR * (0.75 + 0.5*rnd());
+      pts.push([jx,jy,rr]);
+    }
+  }
+  // draw connective network (walls between neighbours)
+  sctx.strokeStyle="#3a4150";
+  sctx.lineWidth=Math.max(1, p.wall*pxPerNm*0.5);
+  for(var i=0;i<pts.length;i++){
+    for(var j=i+1;j<pts.length;j++){
+      var dx=pts[i][0]-pts[j][0], dy=pts[i][1]-pts[j][1];
+      var dd=Math.sqrt(dx*dx+dy*dy);
+      if(dd < step*1.35){
+        sctx.beginPath(); sctx.moveTo(pts[i][0],pts[i][1]); sctx.lineTo(pts[j][0],pts[j][1]); sctx.stroke();
+      }
+    }
+  }
+  // draw pores (air voids) as dark holes with colored rim = interference tint
+  for(var k=0;k<pts.length;k++){
+    var pt=pts[k];
+    sctx.beginPath(); sctx.arc(pt[0],pt[1],pt[2]+2,0,Math.PI*2);
+    sctx.fillStyle=poreColor; sctx.globalAlpha=0.55; sctx.fill(); sctx.globalAlpha=1;
+    sctx.beginPath(); sctx.arc(pt[0],pt[1],pt[2],0,Math.PI*2);
+    sctx.fillStyle=airColor; sctx.fill();
+  }
+  // scale bar (200 nm)
+  var barPx = 200*pxPerNm;
+  sctx.fillStyle="#e6ebf2";
+  sctx.fillRect(14, H-24, barPx, 4);
+  sctx.font="11px sans-serif"; sctx.fillText("200 nm", 14, H-30);
+}
+
+/* ---- Spectrum canvas ---- */
+var pc = document.getElementById("specCanvas");
+var pctx = pc.getContext("2d");
+function wavelengthToRgbCss(nm){
+  // approx visible spectrum color for axis coloring
+  var r=0,g=0,b=0;
+  if(nm<440){r=-(nm-440)/(440-380);b=1;}
+  else if(nm<490){g=(nm-440)/(490-440);b=1;}
+  else if(nm<510){g=1;b=-(nm-510)/(510-490);}
+  else if(nm<580){r=(nm-510)/(580-510);g=1;}
+  else if(nm<645){r=1;g=-(nm-645)/(645-580);}
+  else {r=1;}
+  return "rgb("+Math.round(r*255)+","+Math.round(g*255)+","+Math.round(b*255)+")";
+}
+function drawSpectrum(p){
+  var W=pc.width, H=pc.height, padL=36, padB=26, padT=14, padR=12;
+  pctx.clearRect(0,0,W,H);
+  var x0=padL, x1=W-padR, y0=H-padB, y1=padT;
+  var nmMin=380, nmMax=740;
+  function X(nm){return x0+(nm-nmMin)/(nmMax-nmMin)*(x1-x0);}
+  function Y(v){return y0+(0-v)*(y0-y1);} // v 0..1
+
+  // spectrum color strip along x-axis
+  for(var nm=nmMin; nm<=nmMax; nm+=2){
+    pctx.fillStyle=wavelengthToRgbCss(nm);
+    pctx.globalAlpha=0.35;
+    pctx.fillRect(X(nm), y0+4, (x1-x0)/((nmMax-nmMin)/2)+1, 8);
+  }
+  pctx.globalAlpha=1;
+
+  // grid
+  pctx.strokeStyle="#232a36"; pctx.lineWidth=1; pctx.fillStyle="#6f7c90"; pctx.font="10px sans-serif";
+  [400,450,500,550,600,650,700].forEach(function(nm){
+    pctx.beginPath(); pctx.moveTo(X(nm),y1); pctx.lineTo(X(nm),y0); pctx.stroke();
+    pctx.fillText(nm, X(nm)-9, y0+22);
+  });
+  [0,0.5,1].forEach(function(v){
+    pctx.beginPath(); pctx.moveTo(x0,Y(v)); pctx.lineTo(x1,Y(v)); pctx.stroke();
+    pctx.fillText((v*100)+"%", 4, Y(v)+3);
+  });
+  pctx.fillText(LANG==="ja" ? "反射率 / Reflectance" : "Reflectance", 4, y1-2);
+
+  // curve
+  pctx.beginPath();
+  for(var n=nmMin; n<=nmMax; n+=2){
+    var v=reflectance(n,p);
+    var xx=X(n), yy=Y(v);
+    if(n===nmMin) pctx.moveTo(xx,yy); else pctx.lineTo(xx,yy);
+  }
+  pctx.strokeStyle="#37b6ff"; pctx.lineWidth=2; pctx.stroke();
+  // fill under curve
+  pctx.lineTo(X(nmMax),y0); pctx.lineTo(X(nmMin),y0); pctx.closePath();
+  pctx.fillStyle="rgba(55,182,255,0.12)"; pctx.fill();
+
+  // peak marker
+  var px=X(p.lambda);
+  pctx.strokeStyle="#ffb454"; pctx.setLineDash([4,3]);
+  pctx.beginPath(); pctx.moveTo(px,y1); pctx.lineTo(px,y0); pctx.stroke(); pctx.setLineDash([]);
+  pctx.fillStyle="#ffb454"; pctx.fillText("λ="+fmt(p.lambda,0)+"nm", px-24, y1+8);
+}
+
+/* ---- patches ---- */
+function drawPatches(rgbTarget, p){
+  document.getElementById("targetPatch").style.background =
+    "rgb("+rgbTarget.map(function(x){return Math.round(x);}).join(",")+")";
+  var rc = spectrumToRgb(p);
+  document.getElementById("reproPatch").style.background =
+    "rgb("+rc.map(function(x){return Math.round(x);}).join(",")+")";
+}
+
+var honest = document.getElementById("honest");
+function renderHonest(p){
+  var L = t();
+  honest.innerHTML = "<b>"+L.honestPrefix+"</b>"+L.honestBody+" "+
+    "<span style='color:#6f7c90'>"+L.honestSanity+
+    fmt(p.lambda,0)+" ≈ 2 × "+fmt(p.n_eff,3)+" × "+fmt(p.d,0)+" = "+fmt(2*p.n_eff*p.d,0)+" nm.</span>";
+}
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+var currentRgb=[31,111,176];
+function recompute(){
+  var p = invert(currentRgb);
+  renderParams(p);
+  drawStructure(p);
+  drawSpectrum(p);
+  drawPatches(currentRgb, p);
+  renderHonest(p);
+}
+
+/* ---- sliders ---- */
+var slidersEl = document.getElementById("sliders");
+function buildSliders(){
+  var L = t();
+  slidersEl.innerHTML =
+    sliderRow(L.sliderR,"r",0,255,currentRgb[0]) +
+    sliderRow(L.sliderG,"g",0,255,currentRgb[1]) +
+    sliderRow(L.sliderB,"b",0,255,currentRgb[2]) +
+    '<div style="height:8px"></div>'+
+    sliderRow(L.sliderH,"h",0,360,0) +
+    sliderRow(L.sliderS,"s",0,100,0) +
+    sliderRow(L.sliderV,"v",0,100,0);
+  syncSlidersFromRgb();
+  slidersEl.querySelectorAll("input[type=range]").forEach(function(el){
+    el.addEventListener("input", onSlider);
+  });
+}
+function sliderRow(label,id,mn,mx,val){
+  return '<label>'+label+'</label><div class="row">'+
+    '<input type="range" id="s_'+id+'" min="'+mn+'" max="'+mx+'" value="'+val+'">'+
+    '<span class="val" id="v_'+id+'">'+val+'</span></div>';
+}
+function syncSlidersFromRgb(){
+  ["r","g","b"].forEach(function(c,i){
+    var s=document.getElementById("s_"+c); if(s){s.value=Math.round(currentRgb[i]); document.getElementById("v_"+c).textContent=Math.round(currentRgb[i]);}
+  });
+  var hsv=rgbToHsv(currentRgb[0],currentRgb[1],currentRgb[2]);
+  var hv=[Math.round(hsv[0]),Math.round(hsv[1]*100),Math.round(hsv[2]*100)];
+  ["h","s","v"].forEach(function(c,i){
+    var s=document.getElementById("s_"+c); if(s){s.value=hv[i]; document.getElementById("v_"+c).textContent=hv[i];}
+  });
+}
+var _internal=false;
+function onSlider(e){
+  if(_internal) return;
+  var id=e.target.id;
+  if(id==="s_r"||id==="s_g"||id==="s_b"){
+    currentRgb=[+document.getElementById("s_r").value,+document.getElementById("s_g").value,+document.getElementById("s_b").value];
+  } else {
+    var h=+document.getElementById("s_h").value, s=+document.getElementById("s_s").value/100, v=+document.getElementById("s_v").value/100;
+    currentRgb=hsvToRgb(h,s,v);
+  }
+  _internal=true; syncSlidersFromRgb(); _internal=false;
+  document.getElementById("picker").value=rgbToHex(currentRgb[0],currentRgb[1],currentRgb[2]);
+  recompute();
+}
+
+document.getElementById("picker").addEventListener("input", function(e){
+  currentRgb = hexToRgb(e.target.value);
+  _internal=true; syncSlidersFromRgb(); _internal=false;
+  recompute();
+});
+
+/* ---- presets ---- */
+var PRESETS = [
+  ["カワセミ ブルー","Common kingfisher","#1f6fb0"],
+  ["コティンガ ターコイズ","Cotinga turquoise","#12b6c4"],
+  ["ルリツグミ","Eastern bluebird","#3b6fd4"],
+  ["カササギ 緑虹色","Magpie green iridescence","#2f7d4f"],
+  ["ハト 首虹色","Pigeon neck iridescence","#7a5fb0"],
+  ["モルフォ ブルー","Morpho blue","#1e4fd6"],
+  ["ルリカケス","Lilac roller violet","#8f6fd0"],
+  ["カワセミ 背 (濃青)","Kingfisher back deep blue","#155a94"],
+];
+var swEl=document.getElementById("swatches");
+function renderPresets(){
+  var idx = t().presetName;
+  swEl.innerHTML = "";
+  PRESETS.forEach(function(p){
+    var b=document.createElement("button");
+    b.className="sw";
+    b.innerHTML='<span class="dot" style="background:'+p[2]+'"></span><span>'+p[idx]+'</span>';
+    b.addEventListener("click", function(){
+      currentRgb=hexToRgb(p[2]);
+      document.getElementById("picker").value=p[2];
+      _internal=true; syncSlidersFromRgb(); _internal=false;
+      recompute();
+    });
+    swEl.appendChild(b);
+  });
+}
+
+/* ---- language ---- */
+function applyLang(){
+  var L = t();
+  document.documentElement.lang = LANG;
+  document.title = L.pageTitle;
+  document.getElementById("h1Title").innerHTML = L.h1 +
+    ' <span id="modelBadge" class="badge '+(USING_TRAINED?"trained":"fallback")+'">'+
+    (USING_TRAINED?L.badgeTrained:L.badgeFallback)+'</span>';
+  document.getElementById("tagline").innerHTML = L.taglineHTML;
+  document.getElementById("hTarget").textContent = L.hTarget;
+  document.getElementById("hPresets").textContent = L.hPresets;
+  document.getElementById("hRequired").textContent = L.hRequired;
+  document.getElementById("hStructure").textContent = L.hStructure;
+  document.getElementById("hSpectrum").textContent = L.hSpectrum;
+  document.getElementById("capStructure").textContent = L.capStructure;
+  document.getElementById("capSpectrum").textContent = L.capSpectrum;
+  document.getElementById("lblTarget").textContent = L.lblTarget;
+  document.getElementById("lblRepro").textContent = L.lblRepro;
+  document.getElementById("howSummary").textContent = L.howSummary;
+  document.getElementById("howBody").innerHTML = L.howBody;
+  document.getElementById("langEn").classList.toggle("active", LANG==="en");
+  document.getElementById("langJa").classList.toggle("active", LANG==="ja");
+  buildSliders();
+  renderPresets();
+}
+document.querySelectorAll("#langSwitch button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    LANG = btn.dataset.lang;
+    localStorage.setItem("kawasemi_lang", LANG);
+    applyLang();
+    recompute();
+  });
+});
+
+/* ---- init ---- */
+applyLang();
+recompute();
+loadModel();
+</script>
+</body>
+</html>

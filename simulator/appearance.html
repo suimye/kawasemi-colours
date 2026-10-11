@@ -1,0 +1,310 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Structural Colour — see the structure become colour</title>
+<style>
+  :root{--bg:#0e1116;--panel:#161b22;--line:#2a323d;--ink:#e6edf3;--mut:#9aa7b4;--acc:#58b0ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1060px;margin:0 auto;padding:20px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 18px}
+  footer{padding:16px 0 4px;display:flex;justify-content:center}
+  .langSwitch{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mut)}
+  .langSwitch button{background:none;border:none;color:var(--mut);cursor:pointer;font-size:11px;padding:2px 3px}
+  .langSwitch button.active{color:var(--acc);font-weight:600}
+  .langSwitch button:hover{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:18px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .ctrl{margin:14px 0}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:5px}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%}
+  .modes{display:flex;gap:8px;margin-bottom:6px}
+  .modes button{flex:1;background:#0e1420;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;font-size:12px}
+  .modes button.on{background:#12324f;border-color:var(--acc);color:#dff0ff}
+  .views{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .view{background:#0b0f14;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .view canvas{width:100%;height:auto;border-radius:6px;display:block;image-rendering:auto}
+  .cap{color:var(--mut);font-size:12px;margin-top:6px}
+  .read{display:flex;gap:14px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:8px;background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .sw{width:26px;height:26px;border-radius:6px;border:1px solid #0006}
+  .big{font-size:20px;font-variant-numeric:tabular-nums}
+  .note{color:var(--mut);font-size:12px;margin-top:12px}
+  .full{grid-column:1 / -1}
+  a{color:var(--acc)}
+</style>
+<div class="wrap">
+  <div>
+    <h1 id="h1Title"></h1>
+    <p class="sub" id="subText"></p>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <div class="modes">
+        <button id="mSpongy" class="on"></button>
+        <button id="mMulti"></button>
+      </div>
+      <div class="ctrl"><label id="lblD">d <b><span id="dv">185</span> nm</b></label><input id="d" type="range" min="100" max="320" value="185"></div>
+      <div class="ctrl" id="pfWrap"><label id="lblPf">pore fraction <b><span id="pfv">0.50</span></b></label><input id="pf" type="range" min="20" max="70" value="50"></div>
+      <div class="ctrl"><label id="lblDis">disorder <b><span id="disv">0.12</span></b></label><input id="dis" type="range" min="0" max="80" value="12"></div>
+      <div class="ctrl"><label id="lblAng">viewing angle <b><span id="angv">0</span>°</b></label><input id="ang" type="range" min="0" max="70" value="0"></div>
+      <div class="ctrl" id="nlWrap" style="display:none"><label id="lblNl">layers <b><span id="nlv">8</span></b></label><input id="nl" type="range" min="3" max="16" value="8"></div>
+      <div class="read">
+        <div class="chip"><div class="sw" id="swColor"></div><div><div class="big" id="peakOut">—</div><div class="cap" id="hexOut">—</div></div></div>
+      </div>
+      <p class="note" id="modeNote"></p>
+      <p class="note" id="presetsNote"></p>
+    </div>
+    <div class="panel">
+      <div class="views">
+        <div class="view"><canvas id="cStruct" width="300" height="300"></canvas><div class="cap" id="capStruct"></div></div>
+        <div class="view"><canvas id="cPatch" width="300" height="300"></canvas><div class="cap" id="capPatch"></div></div>
+      </div>
+      <div class="view full" style="margin-top:14px"><canvas id="cSpec" width="900" height="220"></canvas><div class="cap" id="capSpec"></div></div>
+    </div>
+  </div>
+  <footer>
+    <div class="langSwitch" id="langSwitch">
+      <button id="langEn" data-lang="en">EN</button><span>/</span><button id="langJa" data-lang="ja">JPN</button>
+    </div>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ============================================================
+   I18N — default English, toggle to Japanese.
+   ============================================================ */
+var I18N = {
+  en: {
+    pageTitle: "Structural Colour — see the structure become colour",
+    h1: "See the structure become colour",
+    sub: "Move the sliders to see the nanostructure, its colour, and reflectance spectrum update live. " +
+      "Colour is computed from wave optics (structure factor; transfer-matrix for multilayers) + CIE colorimetry — no machine learning.",
+    modeSpongy: "Spongy (non-iridescent)",
+    modeMulti: "Multilayer (iridescent)",
+    lblD: "Period d",
+    lblPf: "Pore fraction",
+    lblDis: "Disorder",
+    lblAng: "Viewing angle",
+    lblNl: "Layers",
+    capStruct: "Nanostructure tinted by its colour",
+    capPatch: "Material swatch (appearance)",
+    capSpec: "Reflectance spectrum R(λ)",
+    modeNoteSpongy: "The spongy (quasi-ordered) structure looks almost the same at any viewing angle — non-iridescent. Pore fraction shifts the effective refractive index and colour.",
+    modeNoteMulti: "A multilayer thin film blue-shifts at higher viewing angle — iridescence (peacock / jewel-beetle type).",
+    presetsPrefix: "Presets: ",
+    presets: {kingfisher:"Kingfisher", cotinga:"Cotinga", bluebird:"Bluebird", peacock:"Peacock (multilayer)"},
+  },
+  ja: {
+    pageTitle: "構造色 — 構造 → 色 を目で見る",
+    h1: "構造 → 色 を目で見る",
+    sub: "スライダーを動かすと、ナノ構造・その構造が出す色・反射スペクトルがライブで変わります。色は波動光学（構造因子・多層はTMM）＋CIE測色で計算（機械学習なし）。",
+    modeSpongy: "スポンジ（非イリデッセント）",
+    modeMulti: "多層（イリデッセント）",
+    lblD: "周期 d",
+    lblPf: "空隙率 pore fraction",
+    lblDis: "秩序 ← → 乱雑 disorder",
+    lblAng: "視角 viewing angle",
+    lblNl: "層数 layers",
+    capStruct: "ナノ構造を「その色」で着色",
+    capPatch: "素材スウォッチ（見た目）",
+    capSpec: "反射スペクトル R(λ)",
+    modeNoteSpongy: "スポンジ(準秩序)は視角を変えてもほぼ同じ色＝非イリデッセント。空隙率で実効屈折率が変わり色がずれます。",
+    modeNoteMulti: "多層薄膜は視角を上げると青方偏移＝イリデッセンス（クジャク・タマムシ型）。",
+    presetsPrefix: "プリセット: ",
+    presets: {kingfisher:"カワセミ", cotinga:"コティンガ", bluebird:"ルリツグミ", peacock:"クジャク(多層)"},
+  }
+};
+var LANG = localStorage.getItem("kawasemi_lang") || "en";
+function t(){ return I18N[LANG]; }
+
+// ---------- CIE colour from spectrum (Wyman 2013 CMF + 6504K illuminant) ----------
+function gg(x,mu,s1,s2){const s=x<mu?s1:s2;return Math.exp(-0.5*((x-mu)/s)**2);}
+function cmf(l){return [
+  1.056*gg(l,599.8,37.9,31.0)+0.362*gg(l,442.0,16.0,26.7)-0.065*gg(l,501.1,20.4,26.2),
+  0.821*gg(l,568.8,46.9,40.5)+0.286*gg(l,530.9,16.3,31.1),
+  1.217*gg(l,437.0,11.8,36.0)+0.681*gg(l,459.0,26.0,13.8)];}
+function planck(l){const h=6.626e-34,c=3e8,k=1.381e-23,T=6504,L=l*1e-9;
+  return 1/(L**5)/(Math.exp(h*c/(L*k*T))-1);}
+const LAMS=[];for(let l=360;l<=780;l+=4)LAMS.push(l);
+const ILL=LAMS.map(planck);const ILLmax=Math.max(...ILL);
+function spectrumToSRGB(R){
+  let X=0,Y=0,Z=0,kk=0;
+  for(let i=0;i<LAMS.length;i++){const I=ILL[i]/ILLmax,[xb,yb,zb]=cmf(LAMS[i]);
+    kk+=yb*I*4;X+=R[i]*I*xb*4;Y+=R[i]*I*yb*4;Z+=R[i]*I*zb*4;}
+  X/=kk;Y/=kk;Z/=kk;
+  let r= 3.2406*X-1.5372*Y-0.4986*Z, g=-0.9689*X+1.8758*Y+0.0415*Z, b=0.0557*X-0.2040*Y+1.0570*Z;
+  r=Math.max(0,r);g=Math.max(0,g);b=Math.max(0,b);const m=Math.max(r,g,b,1);r/=m;g/=m;b/=m;
+  const G=c=>c<=0.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-0.055;
+  return [Math.round(G(r)*255),Math.round(G(g)*255),Math.round(G(b)*255)];
+}
+const nEff=pf=>pf*1.0+(1-pf)*1.56;
+function peakOf(R){let mi=0;for(let i=1;i<R.length;i++)if(R[i]>R[mi])mi=i;return LAMS[mi];}
+
+// ---------- spongy (quasi-ordered) reflectance: structure factor ~ band at 2*n*d ----------
+function spongyR(d,pf,dis,angle){
+  const ne=nEff(pf);
+  const sinI=Math.sin(angle*Math.PI/180)/ne;            // mild internal-angle shift
+  const af=Math.sqrt(Math.max(0,1-sinI*sinI));
+  const lam0=2*ne*d*af;
+  const sig=14+95*dis;                                   // disorder broadens -> desaturates
+  const R=LAMS.map(l=>Math.exp(-0.5*((l-lam0)/sig)**2));
+  const floor=0.18;                                      // melanin absorbs broadband -> saturate
+  return R.map(v=>Math.max(0,v-floor));
+}
+// ---------- multilayer (iridescent) reflectance via transfer matrix ----------
+function C(re,im){return {re,im};}
+function cmul(a,b){return C(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);}
+function cadd(a,b){return C(a.re+b.re,a.im+b.im);}
+function tmmR(d,nlayers,angle){
+  const nhi=2.0,nlo=1.56,n0=1.0,nsub=1.5;                // melanin / keratin
+  const th0=angle*Math.PI/180, sin0=n0*Math.sin(th0);
+  const ns=[],ds=[];for(let i=0;i<nlayers;i++){ns.push(nhi,nlo);ds.push(d/2,d/2);}
+  function Rpol(sPol){
+    return LAMS.map(l=>{
+      let M=[C(1,0),C(0,0),C(0,0),C(1,0)];
+      for(let j=0;j<ns.length;j++){const n=ns[j];
+        const ct=Math.sqrt(Math.max(1e-9,1-(sin0/n)**2));
+        const delta=2*Math.PI*n*ds[j]*ct/l;
+        const eta=sPol?n*ct:n/ct;
+        const m=[C(Math.cos(delta),0),C(0,Math.sin(delta)/eta),C(0,eta*Math.sin(delta)),C(Math.cos(delta),0)];
+        M=[cadd(cmul(M[0],m[0]),cmul(M[1],m[2])),cadd(cmul(M[0],m[1]),cmul(M[1],m[3])),
+           cadd(cmul(M[2],m[0]),cmul(M[3],m[2])),cadd(cmul(M[2],m[1]),cmul(M[3],m[3]))];
+      }
+      const ct0=Math.sqrt(Math.max(1e-9,1-(sin0/n0)**2)),cts=Math.sqrt(Math.max(1e-9,1-(sin0/nsub)**2));
+      const eta0=sPol?n0*ct0:n0/ct0, etas=sPol?nsub*cts:nsub/cts;
+      const B=cadd(M[0],C(M[1].re*etas,M[1].im*etas)), Cc=cadd(M[2],C(M[3].re*etas,M[3].im*etas));
+      const num=C(eta0*B.re-Cc.re,eta0*B.im-Cc.im), den=C(eta0*B.re+Cc.re,eta0*B.im+Cc.im);
+      const dd=den.re*den.re+den.im*den.im;
+      const rr=C((num.re*den.re+num.im*den.im)/dd,(num.im*den.re-num.re*den.im)/dd);
+      return rr.re*rr.re+rr.im*rr.im;
+    });
+  }
+  const Rs=Rpol(true),Rp=Rpol(false);
+  return Rs.map((v,i)=>0.5*(v+Rp[i]));
+}
+
+// ---------- structure field (sum of plane waves) ----------
+function makeField(N,periodPx,dis){
+  const field=new Float32Array(N*N);const W=40;
+  const waves=[];for(let i=0;i<W;i++){const th=Math.random()*Math.PI;
+    const f=(1/periodPx)*(1+(Math.random()*2-1)*dis*0.9);
+    waves.push([Math.cos(th)*2*Math.PI*f,Math.sin(th)*2*Math.PI*f,Math.random()*2*Math.PI]);}
+  let mn=1e9,mx=-1e9;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){let s=0;
+    for(const[wx,wy,ph]of waves)s+=Math.cos(wx*x+wy*y+ph);
+    field[y*N+x]=s;if(s<mn)mn=s;if(s>mx)mx=s;}
+  for(let i=0;i<field.length;i++)field[i]=(field[i]-mn)/(mx-mn+1e-9);
+  return field;
+}
+function quantile(field,q){const a=Float32Array.from(field).sort();return a[Math.floor(q*(a.length-1))];}
+
+function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}
+  return[h,mx?d/mx:0,mx];}
+function hsvToRgb(h,s,v){const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r,g,b;
+  if(h<60)[r,g,b]=[c,x,0];else if(h<120)[r,g,b]=[x,c,0];else if(h<180)[r,g,b]=[0,c,x];
+  else if(h<240)[r,g,b]=[0,x,c];else if(h<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
+  return[(r+m)*255,(g+m)*255,(b+m)*255];}
+
+// ---------- draw ----------
+function drawStruct(cv,field,thr,srgb){
+  const N=cv.width,img=new ImageData(N,N);const[h,s]=rgbToHsv(...srgb);
+  for(let i=0;i<field.length;i++){const wall=field[i]>=thr;const v=(wall?0.35+0.65*field[i]:0.12);
+    const[r,g,b]=hsvToRgb(h,Math.max(0.25,s),v);
+    img.data[i*4]=r;img.data[i*4+1]=g;img.data[i*4+2]=b;img.data[i*4+3]=255;}
+  cv.getContext('2d').putImageData(img,0,0);
+}
+function drawPatch(cv,srgb){const ctx=cv.getContext('2d'),N=cv.width;
+  ctx.clearRect(0,0,N,N);const g=ctx.createRadialGradient(N*0.34,N*0.30,N*0.02,N*0.5,N*0.5,N*0.75);
+  g.addColorStop(0,'rgba(255,255,255,0.85)');g.addColorStop(0.28,`rgb(${srgb})`);g.addColorStop(1,`rgb(${srgb[0]*0.7|0},${srgb[1]*0.7|0},${srgb[2]*0.7|0})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,N,N);}
+function drawSpec(cv,R,srgb){const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b0f14';ctx.fillRect(0,0,W,H);
+  const x=l=>(l-360)/(780-360)*(W-40)+30, y=v=>H-20-v*(H-40);
+  ctx.strokeStyle='#2a323d';ctx.fillStyle='#9aa7b4';ctx.font='11px sans-serif';
+  [400,500,600,700].forEach(l=>{ctx.beginPath();ctx.moveTo(x(l),H-20);ctx.lineTo(x(l),15);ctx.stroke();ctx.fillText(l+'nm',x(l)-12,H-6);});
+  ctx.beginPath();ctx.moveTo(x(360),y(0));for(let i=0;i<LAMS.length;i++)ctx.lineTo(x(LAMS[i]),y(R[i]));
+  ctx.lineTo(x(780),y(0));ctx.closePath();ctx.fillStyle=`rgba(${srgb},0.85)`;ctx.fill();
+  ctx.strokeStyle='#e6edf3';ctx.beginPath();for(let i=0;i<LAMS.length;i++){const px=x(LAMS[i]),py=y(R[i]);i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.stroke();}
+
+// ---------- state / update ----------
+let mode='spongy';
+const $=id=>document.getElementById(id);
+function update(){
+  const L=t();
+  const d=+$('d').value, pf=+$('pf').value/100, dis=+$('dis').value/100, ang=+$('ang').value, nl=+$('nl').value;
+  $('dv').textContent=d;$('pfv').textContent=pf.toFixed(2);$('disv').textContent=dis.toFixed(2);$('angv').textContent=ang;$('nlv').textContent=nl;
+  let R;
+  if(mode==='spongy'){R=spongyR(d,pf,dis,ang);$('modeNote').textContent=L.modeNoteSpongy;}
+  else{R=tmmR(d,nl,ang);$('modeNote').textContent=L.modeNoteMulti;}
+  const mx=Math.max(...R,1e-6);R=R.map(v=>v/mx);
+  const srgb=spectrumToSRGB(R);
+  const peak=peakOf(R);
+  $('peakOut').textContent=peak+' nm';
+  const hex='#'+srgb.map(v=>v.toString(16).padStart(2,'0')).join('');
+  $('hexOut').textContent=hex; $('swColor').style.background=`rgb(${srgb})`;
+  const periodPx=Math.max(6,d*0.085);
+  const field=makeField($('cStruct').width,periodPx,dis);
+  const thr=quantile(field,pf);
+  drawStruct($('cStruct'),field,thr,srgb);
+  drawPatch($('cPatch'),srgb);
+  drawSpec($('cSpec'),R,srgb);
+}
+['d','pf','dis','ang','nl'].forEach(id=>$(id).addEventListener('input',update));
+$('mSpongy').onclick=()=>{mode='spongy';$('mSpongy').classList.add('on');$('mMulti').classList.remove('on');$('pfWrap').style.display='';$('nlWrap').style.display='none';update();};
+$('mMulti').onclick=()=>{mode='multi';$('mMulti').classList.add('on');$('mSpongy').classList.remove('on');$('pfWrap').style.display='none';$('nlWrap').style.display='';update();};
+const PRESET_VALUES={kingfisher:['spongy',185,50,12,0],cotinga:['spongy',200,50,10,0],bluebird:['spongy',175,50,14,0],peacock:['multi',150,50,8,0]};
+
+/* ---- language ---- */
+function renderPresetsNote(){
+  var L=t();
+  var html=L.presetsPrefix;
+  html += Object.keys(PRESET_VALUES).map(function(key){
+    return '<a href="#" data-p="'+key+'">'+L.presets[key]+'</a>';
+  }).join(' · ');
+  $('presetsNote').innerHTML=html;
+  document.querySelectorAll('[data-p]').forEach(function(a){
+    a.onclick=function(e){
+      e.preventDefault();
+      var v=PRESET_VALUES[a.dataset.p];
+      (v[0]==='spongy'?$('mSpongy'):$('mMulti')).click();
+      $('d').value=v[1];$('pf').value=v[2];$('dis').value=v[3];$('ang').value=v[4];
+      update();
+    };
+  });
+}
+function applyLang(){
+  var L=t();
+  document.documentElement.lang=LANG;
+  document.title=L.pageTitle;
+  $('h1Title').textContent=L.h1;
+  $('subText').textContent=L.sub;
+  $('langEn').classList.toggle('active', LANG==='en');
+  $('langJa').classList.toggle('active', LANG==='ja');
+  $('mSpongy').textContent=L.modeSpongy;
+  $('mMulti').textContent=L.modeMulti;
+  $('lblD').firstChild.textContent=L.lblD+' ';
+  $('lblPf').firstChild.textContent=L.lblPf+' ';
+  $('lblDis').firstChild.textContent=L.lblDis+' ';
+  $('lblAng').firstChild.textContent=L.lblAng+' ';
+  $('lblNl').firstChild.textContent=L.lblNl+' ';
+  $('capStruct').textContent=L.capStruct;
+  $('capPatch').textContent=L.capPatch;
+  $('capSpec').textContent=L.capSpec;
+  renderPresetsNote();
+}
+document.querySelectorAll('#langSwitch button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    LANG = btn.dataset.lang;
+    localStorage.setItem('kawasemi_lang', LANG);
+    applyLang();
+    update();
+  });
+});
+
+applyLang();
+update();
+</script>

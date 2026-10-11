@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "Kawasemi Colours: public code and derived outputs for avian structural-colour modelling"
+message: "If you use this software or its derived outputs, please cite the version-specific release."
+type: software
+authors:
+  - family-names: "Morioka"
+    given-names: "Masaki Suimye"
+repository-code: "https://github.com/suimye/kawasemi-colours"
+version: "0.1.0"
+date-released: "2026-10-11"
+license: MIT
+keywords:
+  - structural colour
+  - avian plumage
+  - spongy keratin
+  - coherent scattering
+  - inverse design
+  - CIE colour
+  - FDTD
