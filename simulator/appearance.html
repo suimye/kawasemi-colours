@@ -47,9 +47,9 @@
       </div>
       <div class="ctrl"><label id="lblD">d <b><span id="dv">185</span> nm</b></label><input id="d" type="range" min="100" max="320" value="185"></div>
       <div class="ctrl" id="pfWrap"><label id="lblPf">pore fraction <b><span id="pfv">0.50</span></b></label><input id="pf" type="range" min="20" max="70" value="50"></div>
-      <div class="ctrl"><label id="lblDis">disorder <b><span id="disv">0.12</span></b></label><input id="dis" type="range" min="0" max="80" value="12"></div>
+      <div class="ctrl" id="disWrap"><label id="lblDis">disorder <b><span id="disv">0.12</span></b></label><input id="dis" type="range" min="0" max="80" value="12"></div>
       <div class="ctrl"><label id="lblAng">viewing angle <b><span id="angv">0</span>°</b></label><input id="ang" type="range" min="0" max="70" value="0"></div>
-      <div class="ctrl" id="nlWrap" style="display:none"><label id="lblNl">layers <b><span id="nlv">8</span></b></label><input id="nl" type="range" min="3" max="16" value="8"></div>
+      <div class="ctrl" id="nlWrap" style="display:none"><label id="lblNl">high/low pairs <b><span id="nlv">8 pairs (16 layers)</span></b></label><input id="nl" type="range" min="3" max="16" value="8"></div>
       <div class="read">
         <div class="chip"><div class="sw" id="swColor"></div><div><div class="big" id="peakOut">—</div><div class="cap" id="hexOut">—</div></div></div>
       </div>
@@ -88,12 +88,13 @@ var I18N = {
     lblPf: "Pore fraction",
     lblDis: "Disorder",
     lblAng: "Viewing angle",
-    lblNl: "Layers",
-    capStruct: "Nanostructure tinted by its colour",
+    lblNl: "High/low pairs",
+    capStructSpongy: "Quasi-ordered nanostructure tinted by its colour",
+    capStructMulti: "Idealized multilayer (high/low-index pairs)",
     capPatch: "Material swatch (appearance)",
     capSpec: "Reflectance spectrum R(λ)",
     modeNoteSpongy: "The spongy (quasi-ordered) structure looks almost the same at any viewing angle — non-iridescent. Pore fraction shifts the effective refractive index and colour.",
-    modeNoteMulti: "A multilayer thin film blue-shifts at higher viewing angle — iridescence (peacock / jewel-beetle type).",
+    modeNoteMulti: "The Peacock preset uses eight high/low-index pairs (16 layers), with each layer 70 nm thick. Its reflectance peak blue-shifts at higher viewing angle — iridescence (peacock / jewel-beetle type).",
     presetsPrefix: "Presets: ",
     presets: {kingfisher:"Kingfisher", cotinga:"Cotinga", bluebird:"Bluebird", peacock:"Peacock (multilayer)"},
   },
@@ -107,12 +108,13 @@ var I18N = {
     lblPf: "空隙率 pore fraction",
     lblDis: "秩序 ← → 乱雑 disorder",
     lblAng: "視角 viewing angle",
-    lblNl: "層数 layers",
-    capStruct: "ナノ構造を「その色」で着色",
+    lblNl: "高/低屈折率ペア high/low pairs",
+    capStructSpongy: "準秩序ナノ構造を「その色」で着色",
+    capStructMulti: "理想化した多層構造（高/低屈折率ペア）",
     capPatch: "素材スウォッチ（見た目）",
     capSpec: "反射スペクトル R(λ)",
     modeNoteSpongy: "スポンジ(準秩序)は視角を変えてもほぼ同じ色＝非イリデッセント。空隙率で実効屈折率が変わり色がずれます。",
-    modeNoteMulti: "多層薄膜は視角を上げると青方偏移＝イリデッセンス（クジャク・タマムシ型）。",
+    modeNoteMulti: "クジャクプリセットは高/低屈折率層を8ペア（計16層）、各層70 nmとしています。視角を上げると反射ピークが青方偏移し、イリデッセンスを示します（クジャク・タマムシ型）。",
     presetsPrefix: "プリセット: ",
     presets: {kingfisher:"カワセミ", cotinga:"コティンガ", bluebird:"ルリツグミ", peacock:"クジャク(多層)"},
   }
@@ -128,12 +130,13 @@ function cmf(l){return [
   1.217*gg(l,437.0,11.8,36.0)+0.681*gg(l,459.0,26.0,13.8)];}
 function planck(l){const h=6.626e-34,c=3e8,k=1.381e-23,T=6504,L=l*1e-9;
   return 1/(L**5)/(Math.exp(h*c/(L*k*T))-1);}
-const LAMS=[];for(let l=360;l<=780;l+=4)LAMS.push(l);
+const DLAM=2;
+const LAMS=[];for(let l=360;l<=780;l+=DLAM)LAMS.push(l);
 const ILL=LAMS.map(planck);const ILLmax=Math.max(...ILL);
 function spectrumToSRGB(R){
   let X=0,Y=0,Z=0,kk=0;
   for(let i=0;i<LAMS.length;i++){const I=ILL[i]/ILLmax,[xb,yb,zb]=cmf(LAMS[i]);
-    kk+=yb*I*4;X+=R[i]*I*xb*4;Y+=R[i]*I*yb*4;Z+=R[i]*I*zb*4;}
+    kk+=yb*I*DLAM;X+=R[i]*I*xb*DLAM;Y+=R[i]*I*yb*DLAM;Z+=R[i]*I*zb*DLAM;}
   X/=kk;Y/=kk;Z/=kk;
   let r= 3.2406*X-1.5372*Y-0.4986*Z, g=-0.9689*X+1.8758*Y+0.0415*Z, b=0.0557*X-0.2040*Y+1.0570*Z;
   r=Math.max(0,r);g=Math.max(0,g);b=Math.max(0,b);const m=Math.max(r,g,b,1);r/=m;g/=m;b/=m;
@@ -159,7 +162,7 @@ function C(re,im){return {re,im};}
 function cmul(a,b){return C(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);}
 function cadd(a,b){return C(a.re+b.re,a.im+b.im);}
 function tmmR(d,nlayers,angle){
-  const nhi=2.0,nlo=1.56,n0=1.0,nsub=1.5;                // melanin / keratin
+  const nhi=2.0,nlo=1.40,n0=1.0,nsub=1.5;                // idealized high/low-index layers
   const th0=angle*Math.PI/180, sin0=n0*Math.sin(th0);
   const ns=[],ds=[];for(let i=0;i<nlayers;i++){ns.push(nhi,nlo);ds.push(d/2,d/2);}
   function Rpol(sPol){
@@ -217,6 +220,15 @@ function drawStruct(cv,field,thr,srgb){
     img.data[i*4]=r;img.data[i*4+1]=g;img.data[i*4+2]=b;img.data[i*4+3]=255;}
   cv.getContext('2d').putImageData(img,0,0);
 }
+function drawMultilayer(cv,nlayers){const ctx=cv.getContext('2d'),N=cv.width;
+  ctx.clearRect(0,0,N,N);ctx.fillStyle='#0b0f14';ctx.fillRect(0,0,N,N);
+  const x=42,y=24,w=N-84,h=N-48,total=2*nlayers,lh=h/total;
+  for(let i=0;i<total;i++){
+    ctx.fillStyle=i%2===0?'#314b7c':'#b8d5e5';
+    ctx.fillRect(x,y+i*lh,w,Math.ceil(lh)+0.25);
+  }
+  ctx.strokeStyle='#e6edf3';ctx.lineWidth=1.5;ctx.strokeRect(x,y,w,h);
+}
 function drawPatch(cv,srgb){const ctx=cv.getContext('2d'),N=cv.width;
   ctx.clearRect(0,0,N,N);const g=ctx.createRadialGradient(N*0.34,N*0.30,N*0.02,N*0.5,N*0.5,N*0.75);
   g.addColorStop(0,'rgba(255,255,255,0.85)');g.addColorStop(0.28,`rgb(${srgb})`);g.addColorStop(1,`rgb(${srgb[0]*0.7|0},${srgb[1]*0.7|0},${srgb[2]*0.7|0})`);
@@ -236,27 +248,30 @@ const $=id=>document.getElementById(id);
 function update(){
   const L=t();
   const d=+$('d').value, pf=+$('pf').value/100, dis=+$('dis').value/100, ang=+$('ang').value, nl=+$('nl').value;
-  $('dv').textContent=d;$('pfv').textContent=pf.toFixed(2);$('disv').textContent=dis.toFixed(2);$('angv').textContent=ang;$('nlv').textContent=nl;
+  $('dv').textContent=d;$('pfv').textContent=pf.toFixed(2);$('disv').textContent=dis.toFixed(2);$('angv').textContent=ang;
+  $('nlv').textContent=LANG==='ja'?`${nl}ペア（${2*nl}層）`:`${nl} pairs (${2*nl} layers)`;
   let R;
-  if(mode==='spongy'){R=spongyR(d,pf,dis,ang);$('modeNote').textContent=L.modeNoteSpongy;}
-  else{R=tmmR(d,nl,ang);$('modeNote').textContent=L.modeNoteMulti;}
+  if(mode==='spongy'){R=spongyR(d,pf,dis,ang);$('modeNote').textContent=L.modeNoteSpongy;$('capStruct').textContent=L.capStructSpongy;}
+  else{R=tmmR(d,nl,ang);$('modeNote').textContent=L.modeNoteMulti;$('capStruct').textContent=L.capStructMulti;}
   const mx=Math.max(...R,1e-6);R=R.map(v=>v/mx);
   const srgb=spectrumToSRGB(R);
   const peak=peakOf(R);
   $('peakOut').textContent=peak+' nm';
   const hex='#'+srgb.map(v=>v.toString(16).padStart(2,'0')).join('');
   $('hexOut').textContent=hex; $('swColor').style.background=`rgb(${srgb})`;
-  const periodPx=Math.max(6,d*0.085);
-  const field=makeField($('cStruct').width,periodPx,dis);
-  const thr=quantile(field,pf);
-  drawStruct($('cStruct'),field,thr,srgb);
+  if(mode==='spongy'){
+    const periodPx=Math.max(6,d*0.085);
+    const field=makeField($('cStruct').width,periodPx,dis);
+    const thr=quantile(field,pf);
+    drawStruct($('cStruct'),field,thr,srgb);
+  }else drawMultilayer($('cStruct'),nl);
   drawPatch($('cPatch'),srgb);
   drawSpec($('cSpec'),R,srgb);
 }
 ['d','pf','dis','ang','nl'].forEach(id=>$(id).addEventListener('input',update));
-$('mSpongy').onclick=()=>{mode='spongy';$('mSpongy').classList.add('on');$('mMulti').classList.remove('on');$('pfWrap').style.display='';$('nlWrap').style.display='none';update();};
-$('mMulti').onclick=()=>{mode='multi';$('mMulti').classList.add('on');$('mSpongy').classList.remove('on');$('pfWrap').style.display='none';$('nlWrap').style.display='';update();};
-const PRESET_VALUES={kingfisher:['spongy',185,50,12,0],cotinga:['spongy',200,50,10,0],bluebird:['spongy',175,50,14,0],peacock:['multi',150,50,8,0]};
+$('mSpongy').onclick=()=>{mode='spongy';$('mSpongy').classList.add('on');$('mMulti').classList.remove('on');$('pfWrap').style.display='';$('disWrap').style.display='';$('nlWrap').style.display='none';update();};
+$('mMulti').onclick=()=>{mode='multi';$('mMulti').classList.add('on');$('mSpongy').classList.remove('on');$('pfWrap').style.display='none';$('disWrap').style.display='none';$('nlWrap').style.display='';update();};
+const PRESET_VALUES={kingfisher:['spongy',185,50,12,0,8],cotinga:['spongy',200,50,10,0,8],bluebird:['spongy',175,50,14,0,8],peacock:['multi',140,50,8,0,8]};
 
 /* ---- language ---- */
 function renderPresetsNote(){
@@ -271,7 +286,7 @@ function renderPresetsNote(){
       e.preventDefault();
       var v=PRESET_VALUES[a.dataset.p];
       (v[0]==='spongy'?$('mSpongy'):$('mMulti')).click();
-      $('d').value=v[1];$('pf').value=v[2];$('dis').value=v[3];$('ang').value=v[4];
+      $('d').value=v[1];$('pf').value=v[2];$('dis').value=v[3];$('ang').value=v[4];$('nl').value=v[5];
       update();
     };
   });
@@ -291,7 +306,7 @@ function applyLang(){
   $('lblDis').firstChild.textContent=L.lblDis+' ';
   $('lblAng').firstChild.textContent=L.lblAng+' ';
   $('lblNl').firstChild.textContent=L.lblNl+' ';
-  $('capStruct').textContent=L.capStruct;
+  $('capStruct').textContent=mode==='spongy'?L.capStructSpongy:L.capStructMulti;
   $('capPatch').textContent=L.capPatch;
   $('capSpec').textContent=L.capSpec;
   renderPresetsNote();
