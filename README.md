@@ -63,6 +63,9 @@ The static browser tools can be opened directly:
 - `simulator/index.html` — inverse design, colour to candidate structure.
 - `simulator/appearance.html` — forward calculation, structure to colour.
 
+Screenshot-based instructions for both browser tools are available in the
+[Japanese web app user guide](docs/USER_GUIDE.ja.md).
+
 MEEP is installed separately with conda; see `environment-meep.yml` and
 `supplementary/supplementary_S5_fdtd_reproducibility.md`.
 

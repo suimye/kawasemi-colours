@@ -44,6 +44,9 @@ CNNを使う場合だけ、`requirements-ml.txt`を追加で導入してくだ�
 `environment-meep.yml`と`supplementary/supplementary_S5_fdtd_reproducibility.md`
 に分けています。
 
+スクリーンショット付きの操作手順、各パラメータの読み方、モデルの適用範囲は
+[Webアプリ使い方ガイド](docs/USER_GUIDE.ja.md)を参照してください。
+
 ## 図とライセンス
 
 収録図と除外理由は`figures/README.md`に記載しています。第三者micrographを含む
