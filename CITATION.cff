@@ -5,9 +5,11 @@ type: software
 authors:
   - family-names: "Morioka"
     given-names: "Masaki Suimye"
+    orcid: "https://orcid.org/0000-0003-3511-7279"
+    affiliation: "Database Division for Life Science (DBCLS), BioData Science Initiative (BSI), National Institute of Genetics, Research Organization of Information and Systems"
 repository-code: "https://github.com/suimye/kawasemi-colours"
-version: "0.1.0"
-date-released: "2026-10-11"
+version: "0.1.1"
+date-released: "2026-10-18"
 license: MIT
 keywords:
   - structural colour
