@@ -1,5 +1,8 @@
 # Kawasemi Colours — public reproducibility package
 
+**2026-10-18 correction:** [Image-level rights and methods clarification](docs/RIGHTS_CORRECTION_20261018.md).
+Provenance metadata were corrected; numerical results are unchanged.
+
 This repository is the public software and derived-output companion to the
 Kawasemi Colours study. It contains code, configuration, record-level metadata,
 browser tools, supplementary tables, and figures that can be redistributed.

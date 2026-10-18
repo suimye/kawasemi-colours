@@ -148,9 +148,9 @@ red-producing spacing.**
 | 250 | 608 nm | 670 nm | 663 nm | 647.0 nm | 27.6 nm |
 
 n = 3 seeds per spacing; not sufficient to establish a statistically robust
-trend, but consistent with larger dispersion at the longer (redder) spacing,
-matching the qualitative pattern (though not the magnitude) seen in the
-2-D realisation-to-realisation analysis (main text §3.3, Figure 5B).
+trend, but consistent with larger dispersion at the longer (redder) spacing.
+The 2-D realisation-to-realisation analysis is reported in main text §3.4,
+Figure 6B; its dispersion does not increase monotonically with spacing.
 
 ## S5.6 Interpretation and what would be needed for a quantitative claim
 

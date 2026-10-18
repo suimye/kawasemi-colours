@@ -105,17 +105,16 @@ def reflectance_from_image(image, nm_per_px, n_eff_val,
 
     R(lam) ~ S(q_b),  q_b = 4*pi*n_eff/lam  (normal-incidence backscatter).
 
-    melanin_absorption: real feathers place melanin behind/among the structure
-    which absorbs the broadband *incoherently* scattered light, leaving the
-    coherent peak and thus saturating the colour (Noh et al. 2010). We model this
-    by subtracting the diffuse baseline of S(q) over the visible band.
+    melanin_absorption: historical option name for heuristic baseline correction.
+    Subtract the 25th percentile of positive sampled values and clip at zero.
+    This is not a quantitative melanin-absorption model from Noh et al. (2010).
     """
     q, S = radial_structure_factor(image, nm_per_px)
     S = S.copy(); S[:3] = 0.0                      # drop DC / large-scale gradient
     qb = 4.0 * np.pi * n_eff_val / lam
     R = np.interp(qb, q, S, left=0.0, right=0.0)
     if melanin_absorption and R.max() > 0:
-        floor = np.percentile(R[R > 0], 25)        # broadband diffuse ~ absorbed
+        floor = np.percentile(R[R > 0], 25)        # heuristic baseline
         R = np.clip(R - floor, 0.0, None)
     if R.max() > 0:
         R = R / R.max()
